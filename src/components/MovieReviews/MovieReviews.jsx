@@ -1,49 +1,53 @@
-import { useState, useEffect } from "react";
+import { fetchReviews } from "../../api_controls/fetchResults.js";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
-import styles from "./MovieReviews.module.css";
+import Loader from "../../components/Loader/Loader";
+import s from "./MovieReviews.module.css";
 
-const MovieReviews = () => {
+export default function MovieReviews() {
   const { movieId } = useParams();
-  const [reviews, setReviews] = useState([]);
-
+  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState([]);
   useEffect(() => {
-    const fetchReviews = async () => {
+    async function fetchActors() {
       try {
-        const response = await axios.get(
-          `https://api.themoviedb.org/3/movie/${movieId}/reviews`,
-          {
-            headers: {
-              Authorization:
-                "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyMjk0NGVmMzY4YzA4MzY1YzkwMWUyOWFlYmY1NTkwYyIsIm5iZiI6MTcyNDA0NjI3NS44NzE4MjIsInN1YiI6IjY2YzBjYTM3OWZkYTBlNTA5YzlkYzRlMiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.xa4Np5sf7Vk2RAmnIHoBVnjYjWx629KUQoTOGBAgmvw",
-            },
-          }
-        );
-        setReviews(response.data.results);
-      } catch (error) {
-        console.error("Error fetching reviews:", error);
+        setIsLoading(() => true);
+        const res = await fetchReviews(movieId);
+        setData(res);
+      } catch {
+        console.log("error");
+      } finally {
+        setIsLoading(() => false);
       }
-    };
-
-    fetchReviews();
+    }
+    fetchActors();
   }, [movieId]);
 
+  useEffect(() => {
+    if (data.length > 0) {
+      scrollBy({
+        top: 100,
+        behavior: "smooth",
+      });
+    }
+  }, [data]);
   return (
-    <div className={styles.reviewsContainer}>
-      {reviews.length > 0 ? (
-        <ul className={styles.reviewsList}>
-          {reviews.map(({ id, author, content }) => (
-            <li key={id} className={styles.reviewItem}>
-              <h4>Review by {author}</h4>
-              <p>{content}</p>
-            </li>
-          ))}
+    <div>
+      {isLoading && <Loader />}
+      {data.length > 0 ? (
+        <ul className={s.reviewsList}>
+          {data.map(({ id, author, content }) => {
+            return (
+              <li key={id} className={s.listItem}>
+                <p className={s.listItemHeader}>Author: {author}</p>
+                <p>{content}</p>
+              </li>
+            );
+          })}
         </ul>
       ) : (
-        <p>No reviews available for this movie.</p>
+        <p className={s.noReviewsMessage}>There are no reviews</p>
       )}
     </div>
   );
-};
-
-export default MovieReviews
+}

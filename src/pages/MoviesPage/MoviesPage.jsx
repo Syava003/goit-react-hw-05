@@ -1,61 +1,47 @@
-import { useState, useEffect } from "react";
-import { useSearchParams, Link, useLocation } from "react-router-dom";
-import axios from "axios";
-import styles from "./MoviesPage.module.css";
+import { lazy, useEffect, useState } from "react";
+const MovieList = lazy(() => import("../../components/MovieList/MovieList"));
+import { fetchQery } from "../../api_controls/fetchResults";
+import s from "./MoviesPage.module.css";
+import Loader from "../../components/Loader/Loader";
+import { useSearchParams } from "react-router-dom";
 
-const MoviesPage = () => {
-  const [movies, setMovies] = useState([]);
+export default function MoviesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const query = searchParams.get("query") || "";
-  const location = useLocation();
-
-  const handleSearch = (event) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const queryValue = form.elements.query.value.trim();
-    if (queryValue === "") return;
-    setSearchParams({ query: queryValue });
-  };
+  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState([]);
+  const query = searchParams.get("query") ?? "";
 
   useEffect(() => {
-    if (!query) return;
-
-    const fetchMovies = async () => {
+    const search = async () => {
+      if (!query) return;
       try {
-        const response = await axios.get(
-          `https://api.themoviedb.org/3/search/movie?query=${query}`,
-          {
-            headers: {
-              Authorization: "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyMjk0NGVmMzY4YzA4MzY1YzkwMWUyOWFlYmY1NTkwYyIsIm5iZiI6MTcyNDA0NjI3NS44NzE4MjIsInN1YiI6IjY2YzBjYTM3OWZkYTBlNTA5YzlkYzRlMiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.xa4Np5sf7Vk2RAmnIHoBVnjYjWx629KUQoTOGBAgmvw",
-            },
-          }
-        );
-        setMovies(response.data.results);
-      } catch (error) {
-        console.error("Error fetching movies:", error);
+        setIsLoading(true);
+        const data = await fetchQery(query);
+        setData(data);
+      } catch {
+        console.log("error");
+      } finally {
+        setIsLoading(false);
       }
     };
-
-    fetchMovies();
+    search();
   }, [query]);
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const query = e.currentTarget.searchQuery.value.trim();
+    if (!query) return;
+    setSearchParams({ query });
+  };
+
   return (
-    <div className={styles.container}>
-      <form onSubmit={handleSearch}>
-        <input type="text" name="query" defaultValue={query} />
-        <button type="submit">Search</button>
+    <div>
+      {isLoading && <Loader />}
+      <form onSubmit={handleSubmit} className={s.form}>
+        <input type="text" name="searchQuery" className={s.input} />
+        <button className={s.submitButton}>Search</button>
       </form>
-      <ul>
-        {movies.map((movie) => (
-          <li key={movie.id}>
-            <Link to={`/movies/${movie.id}`} state={{ from: location }}>
-              {movie.title}
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {data.length > 0 && <MovieList list={data} />}
     </div>
   );
-};
-
-export default MoviesPage;
+}

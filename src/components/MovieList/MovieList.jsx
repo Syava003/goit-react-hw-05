@@ -1,20 +1,30 @@
 import { Link, useLocation } from "react-router-dom";
-import styles from "./MovieList.module.css";
+import s from "./MovieList.module.css";
 
-const MovieList = ({ movies }) => {
+export default function MovieList({ isHomePage, list }) {
   const location = useLocation();
 
+  const defineState = () => {
+    if (isHomePage) {
+      return "/";
+    } else {
+      return location;
+    }
+  };
   return (
-    <ul className={styles.movieList}>
-      {movies.map((movie) => (
-        <li key={movie.id}>
-          <Link to={`/movies/${movie.id}`} state={{ from: location }}>
-            {movie.title}
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <div className={s.container}>
+      {isHomePage && <h1 className={s.homeHeader}>Trending today</h1>}
+      <ul className={s.list}>
+        {list.map(({ id, title }) => {
+          return (
+            <li key={id}>
+              <Link to={`/movies/${id}`} state={defineState()}>
+                {title}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
-};
-
-export default MovieList;
+}

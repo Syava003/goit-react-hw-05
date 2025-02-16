@@ -1,73 +1,74 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams, useLocation, Link, Route, Routes } from "react-router-dom";
-import axios from "axios";
-import MovieCast from "../../components/MovieCast/MovieCast.jsx";
-import MovieReviews from "../../components/MovieReviews/MovieReviews.jsx";
-import styles from "./MovieDetailsPage.module.css";
-
-const MovieDetailsPage = () => {
+import { FaArrowLeft } from "react-icons/fa";
+import { fetchDetails } from "../../api_controls/fetchResults";
+import { Link, Outlet, useLocation, useParams } from "react-router-dom";
+import s from "./MovieDetailsPage.module.css";
+import { Suspense, useEffect, useRef, useState } from "react";
+import Loader from "../../components/Loader/Loader";
+export default function MovieDetailsPage() {
   const { movieId } = useParams();
-  const [movie, setMovie] = useState(null);
-  const location = useLocation();
-  const backLinkHref = useRef(location.state?.from ?? "/movies");
+  const [info, setInfo] = useState(null);
 
   useEffect(() => {
-    const fetchMovieDetails = async () => {
+    async function fetchInfo() {
       try {
-        const response = await axios.get(
-          `https://api.themoviedb.org/3/movie/${movieId}`,
-          {
-            headers: {
-              Authorization:
-                "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyMjk0NGVmMzY4YzA4MzY1YzkwMWUyOWFlYmY1NTkwYyIsIm5iZiI6MTcyNDA0NjI3NS44NzE4MjIsInN1YiI6IjY2YzBjYTM3OWZkYTBlNTA5YzlkYzRlMiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.xa4Np5sf7Vk2RAmnIHoBVnjYjWx629KUQoTOGBAgmvw",
-            },
-          }
-        );
-        setMovie(response.data);
-      } catch (error) {
-        console.error("Error fetching movie details:", error);
+        const elem = await fetchDetails(movieId);
+        setInfo(elem);
+      } catch {
+        console.log("error");
       }
-    };
-
-    fetchMovieDetails();
+    }
+    fetchInfo();
   }, [movieId]);
 
-  if (!movie) return <div>Loading...</div>;
+  const location = useLocation();
+  const backState = useRef(location.state ?? "/");
+
+  if (!info) return <h2>Loading information...</h2>;
 
   return (
-    <div className={styles.container}>
-      <Link to={backLinkHref.current} className={styles.backLink}>
-        Go back
-      </Link>
-      <div className={styles.movieDetails}>
-        <img
-          src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-          alt={movie.title}
-          className={styles.poster}
-        />
-        <div>
-          <h2>{movie.title}</h2>
-          <p>User Score: {movie.vote_average}</p>
-          <p>{movie.overview}</p>
-          <p>Genres: {movie.genres.map((genre) => genre.name).join(", ")}</p>
+    <>
+      <div className={s.generalContainer}>
+        <div className={s.backLinkContainer}>
+          <Link to={backState.current} className={s.backLink}>
+            <button className={s.button}>
+              <FaArrowLeft /> Go back
+            </button>
+          </Link>
         </div>
+        <div className={s.filmInfo}>
+          <img
+            src={`https://image.tmdb.org/t/p/w500${info.poster_path}`}
+            alt={info.tagline}
+            className={s.poster}
+          />
+          <div className={s.content}>
+            <h2 className={s.title}>{info.original_title}</h2>
+            <p>User Score: {Math.round(info.vote_average * 10) / 10} / 10</p>
+            <h3>Overview</h3>
+            <p>{info.overview}</p>
+            <h3>Genres</h3>
+            <ul className={s.genreList}>
+              {info.genres.map(({ id, name }) => {
+                return <li key={id}>{name}</li>;
+              })}
+            </ul>
+          </div>
+        </div>
+        <div className={s.additionalContainer}>
+          <p>Additional information</p>
+          <ul>
+            <li>
+              <Link to="cast">Cast</Link>
+            </li>
+            <li>
+              <Link to="reviews">Reviews</Link>
+            </li>
+          </ul>
+        </div>
+        <Suspense fallback={<Loader />}>
+          <Outlet />
+        </Suspense>
       </div>
-      <div className={styles.additionalInfo}>
-        <ul>
-          <li>
-            <Link to="cast">Cast</Link>
-          </li>
-          <li>
-            <Link to="reviews">Reviews</Link>
-          </li>
-        </ul>
-      </div>
-      <Routes>
-        <Route path="cast" element={<MovieCast />} />
-        <Route path="reviews" element={<MovieReviews />} />
-      </Routes>
-    </div>
+    </>
   );
-};
-
-export default MovieDetailsPage;
+}
