@@ -1,74 +1,69 @@
-import { FaArrowLeft } from "react-icons/fa";
-import { fetchDetails } from "../../api_controls/fetchResults";
-import { Link, Outlet, useLocation, useParams } from "react-router-dom";
-import s from "./MovieDetailsPage.module.css";
-import { Suspense, useEffect, useRef, useState } from "react";
-import Loader from "../../components/Loader/Loader";
-export default function MovieDetailsPage() {
-  const { movieId } = useParams();
-  const [info, setInfo] = useState(null);
+import s from './MovieDetailsPage.module.css';
+import { useEffect, useState, useRef } from "react";
+import { Link, NavLink, Outlet, useLocation, useParams } from "react-router-dom";
+import { fetchFilmById } from "../../../services/api";
+import clsx from 'clsx';
 
+const buildLinkClass = ({ isActive }) => {
+  return clsx(s.link, isActive && s.active);
+};
+
+const MovieDetailsPage = () => {
+  const { movieId } = useParams();
+  const [film, setFilm] = useState(null);
+  const location = useLocation();
+  const goBackUrl = useRef(location.state);
+  
+  
   useEffect(() => {
-    async function fetchInfo() {
+    
+    const getData = async () => {
       try {
-        const elem = await fetchDetails(movieId);
-        setInfo(elem);
-      } catch {
-        console.log("error");
+        const data = await fetchFilmById(movieId);
+        setFilm(data);
+      } catch (er) {
+        console.log(er);
       }
-    }
-    fetchInfo();
+    };
+    getData();
   }, [movieId]);
 
-  const location = useLocation();
-  const backState = useRef(location.state ?? "/");
-
-  if (!info) return <h2>Loading information...</h2>;
+  if (!film) return <h2>Loading...</h2>;
+  
+  
+  const img = 'https://image.tmdb.org/t/p/w500/';
+  const { title, overview, genres, vote_average, poster_path } = film;
+  
 
   return (
-    <>
-      <div className={s.generalContainer}>
-        <div className={s.backLinkContainer}>
-          <Link to={backState.current} className={s.backLink}>
-            <button className={s.button}>
-              <FaArrowLeft /> Go back
-            </button>
-          </Link>
-        </div>
-        <div className={s.filmInfo}>
-          <img
-            src={`https://image.tmdb.org/t/p/w500${info.poster_path}`}
-            alt={info.tagline}
-            className={s.poster}
-          />
-          <div className={s.content}>
-            <h2 className={s.title}>{info.original_title}</h2>
-            <p>User Score: {Math.round(info.vote_average * 10) / 10} / 10</p>
-            <h3>Overview</h3>
-            <p>{info.overview}</p>
-            <h3>Genres</h3>
-            <ul className={s.genreList}>
-              {info.genres.map(({ id, name }) => {
-                return <li key={id}>{name}</li>;
-              })}
-            </ul>
+    <div>
+      <div className={s.film_wrapper}>
+        <button ><Link className={s.goback} to={goBackUrl.current}>Go back</Link></button>
+        <div className={s.img_wrapper}>
+          <img src={img + poster_path} alt={title} width='300' />
+          <div className={s.description}>
+          <h2>{title}</h2>
+          <p>User score: {vote_average}</p>
+          <h3>Overviews</h3>
+          <p>{overview}</p>
+          <h3>Genres</h3>
+          <span className={s.genres}>
+            {genres.map(item => <p>{item.name}</p>)}
+          </span>
           </div>
         </div>
-        <div className={s.additionalContainer}>
-          <p>Additional information</p>
-          <ul>
-            <li>
-              <Link to="cast">Cast</Link>
-            </li>
-            <li>
-              <Link to="reviews">Reviews</Link>
-            </li>
-          </ul>
-        </div>
-        <Suspense fallback={<Loader />}>
-          <Outlet />
-        </Suspense>
       </div>
-    </>
-  );
+      <div className={s.info_wrapper}>
+        <h3>Additional information</h3>
+        <ul className={s.list_nav}>
+          <li key="cast"><NavLink className={buildLinkClass} to='cast'>Cast</NavLink></li>
+          <li key="reviews"><NavLink className={buildLinkClass} to='reviews'>Reviews</NavLink></li>
+          </ul>
+      </div>
+       <Outlet/>
+    </div>
+   
+  )
 }
+
+export default MovieDetailsPage;

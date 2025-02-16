@@ -1,53 +1,38 @@
-import { fetchReviews } from "../../api_controls/fetchResults.js";
+import s from './MovieReviews.module.css';
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import Loader from "../../components/Loader/Loader";
-import s from "./MovieReviews.module.css";
+import { fetchReviews } from "../../../services/api";
 
-export default function MovieReviews() {
+
+const MovieReviews = () => {
   const { movieId } = useParams();
-  const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState([]);
-  useEffect(() => {
-    async function fetchActors() {
-      try {
-        setIsLoading(() => true);
-        const res = await fetchReviews(movieId);
-        setData(res);
-      } catch {
-        console.log("error");
-      } finally {
-        setIsLoading(() => false);
-      }
-    }
-    fetchActors();
-  }, [movieId]);
+  const [reviews, setReviews] = useState([]);
 
   useEffect(() => {
-    if (data.length > 0) {
-      scrollBy({
-        top: 100,
-        behavior: "smooth",
-      });
-    }
-  }, [data]);
-  return (
-    <div>
-      {isLoading && <Loader />}
-      {data.length > 0 ? (
-        <ul className={s.reviewsList}>
-          {data.map(({ id, author, content }) => {
-            return (
-              <li key={id} className={s.listItem}>
-                <p className={s.listItemHeader}>Author: {author}</p>
-                <p>{content}</p>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <p className={s.noReviewsMessage}>There are no reviews</p>
-      )}
-    </div>
+          const getData = async () => {
+              try {
+                const data = await fetchReviews(movieId);
+                  setReviews(data.results); 
+              } catch (er) {
+                  console.log(er);
+              }
+          };
+          getData();
+      }, [movieId]
   );
+  
+
+  return (
+    <div className={s.reviews_wrapper}>
+      <ul>
+        {reviews.map(({ id, author, content }) => (
+          <li key={id}>{author}
+            <p>{content}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
+
+export default MovieReviews;

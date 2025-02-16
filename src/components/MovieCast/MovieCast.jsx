@@ -1,60 +1,43 @@
-import { fetchCast } from "../../api_controls/fetchResults.js";
-import { useEffect, useState } from "react";
+import s from './MovieCast.module.css'
+import { useEffect, useState } from "react"
+import { fetchCast } from "../../../services/api";
 import { useParams } from "react-router-dom";
-import Loader from "../../components/Loader/Loader";
-import s from "./MovieCast.module.css";
 
-export default function MovieCast() {
-  const { movieId } = useParams();
-  const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState([]);
-  useEffect(() => {
-    async function fetchActors() {
-      try {
-        setIsLoading(() => true);
-        const res = await fetchCast(movieId);
-        setData(res);
-      } catch {
-        console.log("error");
-      } finally {
-        setIsLoading(() => false);
-      }
-    }
-    fetchActors();
-  }, [movieId]);
+const MovieCast = () => {
+    const { movieId } = useParams();
+    const [cast, setCast] = useState([]);
 
-  useEffect(() => {
-    if (data.length > 0) {
-      scrollBy({
-        top: 200,
-        behavior: "smooth",
-      });
-    }
-  }, [data]);
+    useEffect(() => {
+        const getData = async () => {
+            try {
+                const data = await fetchCast(movieId);
+                setCast(data.cast);
+                
+            } catch (er) {
+                console.log(er);
+            }
+        };
+        getData();
+    }, [movieId]
+    );
+
+    const img = 'https://image.tmdb.org/t/p/w500/';
+    
+
+
   return (
-    <div>
-      {isLoading && <Loader />}
-      {data.length > 0 ? (
-        <ul className={s.actorsList}>
-          {data.map(({ id, character, name, profile_path }) => {
-            return (
-              <li key={id} className={s.listItem}>
-                <img
-                  src={`https://image.tmdb.org/t/p/w500${profile_path}`}
-                  alt={name}
-                  className={s.listItemImage}
-                />
-                <div className={s.listItemTextContainer}>
-                  <p className={s.listItemText}>{name}</p>
-                  <p className={s.listItemText}>Character: {character}</p>
-                </div>
-              </li>
-            );
-          })}
+    <div className={s.actors_wrapper}>
+          <ul className={s.actors_list}>
+              {cast.map(({ name, id, character, profile_path }) => (
+                  <li key={id}>
+                      <img src={img + profile_path} alt={name} width='100' />
+                      <p className={s.actor}>{name}</p>
+                      <p className={s.actor}>{character}</p>
+                  </li>
+           ))}   
         </ul>
-      ) : (
-        <p>There is no information about actors</p>
-      )}
     </div>
-  );
+  )
 }
+
+export default MovieCast;

@@ -1,30 +1,32 @@
-import { lazy, useEffect, useState } from "react";
-const MovieList = lazy(() => import("../../components/MovieList/MovieList"));
-import { fetchTrending } from "../../api_controls/fetchResults";
-import Loader from "../../components/Loader/Loader";
-export default function HomePage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState([]);
+import { useEffect, useState } from 'react';
+import MovieList from '../../components/MovieList/MovieList';
+import s from './HomePage.module.css';
+import { fetchTrending } from '../../../services/api';
 
-  useEffect(() => {
-    setIsLoading(() => true);
-    const fetchTrend = async () => {
-      try {
-        const result = await fetchTrending();
-        setData(result);
-      } catch {
-        console.log("error");
-      } finally {
-        setIsLoading(() => false);
-      }
-    };
-    fetchTrend();
-  }, []);
 
+const HomePage = () => {
+    const [trend, setTrend] = useState([]);
+
+    useEffect(() => {
+        const getData = async () => {
+            try {
+                const data = await fetchTrending();  
+                return setTrend(prev => [...prev, ...data]);
+                
+            } catch (er) {
+                console.log(er);
+            }
+        };
+        getData();
+    }, []);
+
+    
   return (
-    <div>
-      <MovieList isHomePage={true} list={data} />
-      {isLoading && <Loader />}
+    <div className={s.home_wrapper}>
+          <h2 className={s.home_title}>Trending today</h2>
+          <MovieList data={trend} />
     </div>
-  );
+  )
 }
+
+export default HomePage;
